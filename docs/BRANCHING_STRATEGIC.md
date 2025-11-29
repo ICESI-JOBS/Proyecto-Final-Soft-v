@@ -1,16 +1,59 @@
-## Estrategia de branching (Git)
+# Estrategia de Branching — GitFlow
 
-Ramas principales:
-- `main`: contiene las versiones estables, listas para producción.
-- `develop`: integración continua de funcionalidades del sprint.
+Este documento define el flujo de ramas utilizado para el proyecto
 
-Ramas auxiliares:
-- `feature/<nombre>`: desarrollo de nuevas features. Base = `develop`.
-- `hotfix/<nombre>`: correcciones urgentes sobre producción. Base = `main`.
+---
 
-Flujo:
-1. Se crea una issue en Jira (historia de usuario).
-2. Se crea una rama `feature/<issue-id>-<nombre>` desde `develop`.
-3. Se realiza el desarrollo y se envía un Pull Request hacia `develop`.
-4. Tras revisión y aprobación, se hace merge a `develop`.
-5. Al cerrar el sprint o preparar una release, se mergea `develop` en `main` y se crea un tag.
+## Ramas Principales
+
+### `main`
+- Contiene únicamente versiones estables.
+- Toda entrega a producción proviene desde una rama `release/*` o `hotfix/*`.
+
+### `develop`
+- Rama donde se integran todas las funcionalidades del sprint.
+- Punto de partida para cualquier nueva feature.
+
+---
+
+## Ramas Auxiliares
+
+### `feature/<issue-id>-<nombre>`
+- Usadas para desarrollar nuevas funcionalidades.
+- Se crean desde `develop`.
+- Deben tener un Pull Request (PR) hacia `develop`.
+
+### `release/<version>`
+- Se crean desde `develop`.
+- Permiten preparar una versión para producción.
+- Al finalizar: merge a `main` y `develop`, y creación de tag.
+
+### `hotfix/<nombre>`
+- Se crean desde `main`.
+- Se usan para corregir problemas críticos en producción.
+- Se mergean a `main` y `develop`.
+
+---
+
+## Flujo de Trabajo Completo
+
+1. Crear una historia de usuario en Jira.
+2. Crear una rama basada en la historia:  
+   `feature/PROY-XX-nombre-claro`
+3. Implementar cambios y realizar commits siguiendo Conventional Commits.
+4. Crear Pull Request hacia `develop`.
+5. Obtener al menos **una aprobación obligatoria**.
+6. Esperar validación del pipeline CI.
+7. Mergear hacia `develop`.
+8. Para entregar una versión:
+   - Crear rama `release/X.Y.Z`.
+   - Validar CI.
+   - Merge en `main`.
+   - Crear tag `vX.Y.Z`.
+
+---
+
+## Convenciones
+- Nombre de ramas: `tipo/issue-descriptivo`.
+- Commits basados en Conventional Commits.
+- PRs obligatorios para todo merge.
