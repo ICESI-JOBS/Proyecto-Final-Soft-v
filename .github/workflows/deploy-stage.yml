@@ -1,0 +1,48 @@
+name: Deploy to AKS - Stage
+
+on:
+  workflow_dispatch:   # Lo lanzas a mano cuando quieras promover a stage
+
+env:
+  REGISTRY: docker.io
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+jobs:
+  deploy-to-aks-stage:
+    runs-on: ubuntu-latest
+    environment: stage   # Enlace con el environment "stage"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+      - name: Ensure namespace exists
+        run: |
+          kubectl get namespace icesi-stage || kubectl create namespace icesi-stage
+
+      - name: Deploy manifests to AKS (stage)
+        run: |
+          kubectl apply -n icesi-stage -f k8s-stage
+
+      - name: Restart deployments (stage)
+        run: |
+          kubectl rollout restart deployment api-gateway -n icesi-stage
+          kubectl rollout restart deployment cloud-config -n icesi-stage
+          kubectl rollout restart deployment service-discovery -n icesi-stage
+          kubectl rollout restart deployment user-service -n icesi-stage
+          kubectl rollout restart deployment product-service -n icesi-stage
+          kubectl rollout restart deployment order-service -n icesi-stage
+          kubectl rollout restart deployment payment-service -n icesi-stage
+          kubectl rollout restart deployment shipping-service -n icesi-stage
+          kubectl rollout restart deployment favourite-service -n icesi-stage
+          kubectl rollout restart deployment proxy-client -n icesi-stage

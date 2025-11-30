@@ -1,0 +1,48 @@
+name: Deploy to AKS - Prod
+
+on:
+  workflow_dispatch:   # Solo manual, y con approvals del environment "prod"
+
+env:
+  REGISTRY: docker.io
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+jobs:
+  deploy-to-aks-prod:
+    runs-on: ubuntu-latest
+    environment: prod    # Aquí GitHub aplica los "required reviewers"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+      - name: Ensure namespace exists
+        run: |
+          kubectl get namespace icesi-prod || kubectl create namespace icesi-prod
+
+      - name: Deploy manifests to AKS (prod)
+        run: |
+          kubectl apply -n icesi-prod -f k8s-prod
+
+      - name: Restart deployments (prod)
+        run: |
+          kubectl rollout restart deployment api-gateway -n icesi-prod
+          kubectl rollout restart deployment cloud-config -n icesi-prod
+          kubectl rollout restart deployment service-discovery -n icesi-prod
+          kubectl rollout restart deployment user-service -n icesi-prod
+          kubectl rollout restart deployment product-service -n icesi-prod
+          kubectl rollout restart deployment order-service -n icesi-prod
+          kubectl rollout restart deployment payment-service -n icesi-prod
+          kubectl rollout restart deployment shipping-service -n icesi-prod
+          kubectl rollout restart deployment favourite-service -n icesi-prod
+          kubectl rollout restart deployment proxy-client -n icesi-prod
