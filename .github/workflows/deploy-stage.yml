@@ -46,3 +46,14 @@ jobs:
           kubectl rollout restart deployment shipping-service -n icesi-stage
           kubectl rollout restart deployment favourite-service -n icesi-stage
           kubectl rollout restart deployment proxy-client -n icesi-stage
+          
+      - name: Notify Slack on failure (deploy stage)
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":x: *Deploy a AKS (stage) falló* en `${{ github.repository }}`.\nWorkflow: `${{ github.workflow }}`\nBranch: `${{ github.ref_name }}`\nAutor: `${{ github.actor }}`"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
