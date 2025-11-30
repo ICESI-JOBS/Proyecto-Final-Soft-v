@@ -12,7 +12,7 @@ on:
 jobs:
   build-and-analyze:
     runs-on: ubuntu-latest
-
+    environment: dev
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
