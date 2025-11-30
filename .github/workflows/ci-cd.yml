@@ -26,6 +26,17 @@ jobs:
       - name: Build and test with Maven
         run: ./mvnw -B test
 
+      - name: Notify Slack on failure (build-and-test)
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":x: *Build and tests fallaron* en `${{ github.repository }}`.\nWorkflow: `${{ github.workflow }}`\nJob: `${{ github.job }}`\nBranch: `${{ github.ref_name }}`\nAutor: `${{ github.actor }}`"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
   docker-build-and-push:
     needs: build-and-test
     runs-on: ubuntu-latest
@@ -93,6 +104,18 @@ jobs:
 
           docker build -t $DOCKERHUB_USERNAME/proxy-client:latest ./proxy-client
           docker push $DOCKERHUB_USERNAME/proxy-client:latest
+        
+      - name: Notify Slack on failure (docker-build-and-push)
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":x: *Docker build & push falló* en `${{ github.repository }}`.\nWorkflow: `${{ github.workflow }}`\nJob: `${{ github.job }}`\nBranch: `${{ github.ref_name }}`\nAutor: `${{ github.actor }}`"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
 
   deploy-to-aks:
     needs: docker-build-and-push
@@ -134,3 +157,14 @@ jobs:
           kubectl rollout restart deployment shipping-service -n icesi-dev
           kubectl rollout restart deployment favourite-service -n icesi-dev
           kubectl rollout restart deployment proxy-client -n icesi-dev
+          
+      - name: Notify Slack on failure (deploy-to-aks dev)
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":x: *Deploy a AKS (dev) falló* en `${{ github.repository }}`.\nWorkflow: `${{ github.workflow }}`\nJob: `${{ github.job }}`\nBranch: `${{ github.ref_name }}`\nAutor: `${{ github.actor }}`"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
