@@ -4,386 +4,131 @@ Este directorio contiene la infraestructura como código para el proyecto del ec
 
 El objetivo de esta configuración es:
 
-- Proveer una base estructurada de Terraform (cumpliendo la HU de inicialización del proyecto).
-
-- Crear recursos centrales de infraestructura en Azure (Resource Group, Virtual Network y un clúster AKS).
-
-- Permitir diferenciar entornos (dev, stage, prod) usando variables.
-
-- Dejar el proyecto listo para evolucionar hacia:
-
-    - Backend remoto.
-
-    - Módulos reutilizables.
-
-    - Múltiples ambientes separados por carpetas.
+- Proveer una base estructurada y modular de Terraform.
+- Crear recursos centrales de infraestructura en Azure (Resource Group, Virtual Network, un clúster AKS y Monitoreo).
+- Permitir diferenciar entornos (dev, stage, prod) usando workspaces y carpetas dedicadas.
+- Facilitar la gestión y el despliegue a través de un flujo de trabajo claro.
 
 ## Estructura
 
-Actualmente la carpeta infra/ tiene la siguiente estructura:
+La carpeta `infra/` ha evolucionado a una estructura modular y basada en entornos para mejorar la reutilización y la separación de responsabilidades:
 
-~~~
-
+```
 infra/
+├── envs/
+│   └── dev/
+│       ├── main.tf              # Llama a los módulos con valores para el entorno 'dev'
+│       ├── variables.tf         # Variables específicas de 'dev'
+│       ├── outputs.tf           # Salidas del entorno 'dev'
+│       └── .terraform.lock.hcl
+│
+├── modules/
+│   ├── aks/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   ├── monitoring/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   └── network/
+│       ├── main.tf
+│       ├── variables.tf
+│       └── outputs.tf
+│
+├── .gitignore
+├── README.md                    # Esta documentación
+└── ... (otros archivos raíz que pueden ser legacy o de configuración global)
+```
 
-├── main.tf              # Declaración principal de recursos (RG, VNet, AKS)
-
-├── providers.tf         # Configuración del proveedor Azurerm y backend local
-
-├── variables.tf         # Variables de entrada (región, prefijo, entorno, tamaño de nodos)
-
-├── outputs.tf           # Salidas (nombre RG, nombre AKS, comando para credenciales)
-
-└── .terraform.lock.hcl  # Lockfile de Terraform (no editar manualmente)
-
-~~~
-
-## Nota: No hay todavía subcarpetas modules/ ni environments/. La separación de entornos se realiza por ahora mediante la variable env definida en variables.tf.
+- **`envs/`**: Contiene una subcarpeta por cada entorno (ej. `dev`, `stage`, `prod`). Cada una tiene su propio `main.tf` que consume los módulos del directorio `modules` para construir la infraestructura de ese entorno específico.
+- **`modules/`**: Contiene módulos de Terraform reutilizables. Cada módulo encapsula una pieza lógica de la infraestructura:
+    - **`aks`**: Define el clúster de Azure Kubernetes Service.
+    - **`network`**: Define la Virtual Network, subredes y otros componentes de red.
+    - **`monitoring`**: Define los recursos de monitoreo, como Log Analytics Workspace.
 
 ## Historias de Usuario Cubiertas
 
-1. Inicializar un proyecto Terraform estructurado
-
-Como ingeniero DevOps Quiero inicializar un proyecto Terraform estructurado Para gestionar la infraestructura de manera automatizada.
-
-Esta HU se cumple porque:
-
-Existe un main.tf que define recursos reales en Azure.
-
-providers.tf establece:
-
-La versión mínima de Terraform (>= 1.6.0).
-
-El proveedor azurerm con versión fijada (~> 4.0).
-
-Un backend (por ahora local).
-
-variables.tf centraliza parámetros clave del despliegue.
-
-El proyecto puede inicializarse con:
-
-~~~
-
-cd infra
-
-terraform init
-
-~~~
-
-1. Preparación para modularización
-
-Como desarrollador DevOps Quiero organizar la infraestructura en módulos Para que sea reusable, escalable y mantenible.
-
-Actualmente, toda la infraestructura se declara en main.tf. Se utiliza un local.base\_name basado en project\_prefix + env, lo que facilita luego dividir esta lógica en módulos sin romper el nombre de los recursos.
-
-Ejemplo (en main.tf):
-
-~~~
-
-Terraform
-
-locals {
-
-\# Nombre base para recursos
-
-base\_name = "${var.project\_prefix}-${var.env}"
-
-}
-
-~~~
-
-A partir de este base\_name se nombran:
-
-~~~
-
-Resource Group: ${local.base\_name}-rg
-
-Virtual Network: ${local.base\_name}-vnet
-
-~~~
-
-(y el resto de recursos asociados en el archivo)
-
-Esto permitirá más adelante extraer un módulo resource\_group, un módulo network y un módulo aks sin impactar la convención de nombres del proyecto.
-
-1. Backend para estado de Terraform (actual: local, preparado para remoto)
-
-Como ingeniero DevOps Quiero almacenar el estado de Terraform en un backend remoto Para asegurar consistencia entre equipos.
-
-En providers.tf está definido un backend local:
-
-~~~
-Terraform
-
-terraform {
-
-required\_version = ">= 1.6.0"
-
-required\_providers {
-
-azurerm = {
-
-source  = "hashicorp/azurerm"
-
-version = "~> 4.0"
-
-}
-
-}
-
-\# De momento usamos backend local.
-
-\# Más adelante puede cambiarse a Azure Storage (backend remoto).
-
-backend "local" {
-
-path = "terraform.tfstate"
-
-}
-
-}
-
-~~~
-
-Esto cumple lo necesario para desarrollo local y documenta explícitamente la intención de cambiarlo luego a un backend remoto mediante Azure Storage.
-
-1. Multi-ambiente usando variables (dev, stage, prod)
-
-Como DevOps Quiero tener múltiples ambientes independientes en Terraform Para desplegar versiones aisladas del proyecto.
-
-En variables.tf está definido:
-
-~~~
-
-variable "env" {
-
-description = "Nombre del entorno (dev/stage/prod)"
-
-type        = string
-
-default     = "dev"
-
-}
-
-~~~
-
-Y en main.tf se usa:
-
-~~~
-
-locals {
-
-base\_name = "${var.project\_prefix}-${var.env}"
-
-}
-
-resource "azurerm\_resource\_group" "rg" {
-
-name     = "${local.base\_name}-rg"
-
-location = var.location
-
-}
-
-~~~
-
-Esto permite la separación de entornos simplemente ejecutando:
-
-~~~
-
-terraform apply -var="env=dev"
-
-terraform apply -var="env=stage"
-
-terraform apply -var="env=prod"
-
-~~~
-
-## Recursos que se crean actualmente
-
-La infraestructura definida crea:
-
-- Un Resource Group.
-
-- Una Virtual Network.
-
-- Un cluster AKS (Azure Kubernetes Service) con:
-
-    - RBAC habilitado.
-
-    - Red avanzada configurada.
-
-    - Node pool estándar.
-
-Integración con red definida vía network\_profile.
-
-#### Nota: En el main.tf existe un bloque ... que indica dónde se extiende la configuración del clúster y red en futuras entregas.
-
-## Salidas (outputs)
-
-En outputs.tf el proyecto expone:
-
-~~~
-
-Terraform
-
-output "resource\_group\_name" {
-
-description = "Nombre del resource group generado"
-
-value       = azurerm\_resource\_group.rg.name
-
-}
-
-output "aks\_name" {
-
-description = "Nombre del cluster AKS"
-
-value       = azurerm\_kubernetes\_cluster.aks.name
-
-}
-
-output "aks\_kube\_config" {
-
-description = "Comando para obtener credenciales del AKS"
-
-value       = "az aks get-credentials --resource-group ${azurerm\_resource\_group.rg.name} --name ${azurerm\_kubernetes\_cluster.aks.name}"
-
-}
-~~~
-
-Esto permite conectarse rápidamente al clúster:
-~~~
-
-Bash
-
-terraform output aks\_kube\_config
-
-~~~
-
-Prerrequisitos
-
-Terraform ≥ 1.6.0
-
-Azure CLI instalado:
-
-~~~
-
-az login
-
-az account show
-
-~~~
-
-Permisos en Azure para crear: Resource Groups, VNets y AKS clusters.
+1.  **Inicializar un proyecto Terraform estructurado**: Se cumple mediante la organización en módulos y entornos, lo que permite una gestión limpia y escalable.
+2.  **Modularización de la infraestructura**: Se ha implementado extrayendo la lógica de `AKS`, `network` y `monitoring` en módulos reutilizables, permitiendo que cada pieza evolucione de forma independiente.
+3.  **Backend para estado de Terraform**: El backend sigue siendo local dentro de cada entorno (`envs/dev/terraform.tfstate`), pero está preparado para migrar a un backend remoto (Azure Storage) para trabajo en equipo.
+4.  **Multi-ambiente**: Implementado a través de directorios dedicados en `envs/`, lo que proporciona un aislamiento mucho más robusto que el uso de variables. Cada entorno tiene su propio estado y configuración.
+
+## Recursos que se crean (por entorno)
+
+La infraestructura definida en el entorno `dev` crea:
+
+- Un **Resource Group**.
+- Una **Virtual Network** con sus subredes (gracias al módulo `network`).
+- Un **clúster AKS (Azure Kubernetes Service)** (gracias al módulo `aks`).
+- Un **Log Analytics Workspace** para monitoreo (gracias al módulo `monitoring`).
+
+## Prerrequisitos
+
+- Terraform ≥ 1.6.0
+- Azure CLI instalado y autenticado:
+  ```bash
+  az login
+  az account show
+  ```
+- Permisos suficientes en la suscripción de Azure para crear los recursos mencionados.
 
 ## Flujo de uso recomendado
 
-Entrar a la carpeta infra:
+El flujo de trabajo ahora se realiza **dentro del directorio del entorno** que se desea gestionar.
 
-~~~
+1.  **Entrar a la carpeta del entorno `dev`**:
+    ```bash
+    cd infra/envs/dev
+    ```
 
-cd infra
+2.  **Inicializar Terraform**:
+    Esto descargará los proveedores y configurará los módulos.
+    ```bash
+    terraform init
+    ```
 
-~~~
+3.  **Ver el plan de ejecución**:
+    Revisa qué cambios se aplicarán en la infraestructura.
+    ```bash
+    terraform plan
+    ```
 
-Inicializar:
+4.  **Aplicar los cambios**:
+    Crea o actualiza la infraestructura en Azure.
+    ```bash
+    terraform apply --auto-approve
+    ```
 
-~~~
-
-terraform init
-
-~~~
-
-Ver el plan:
-
-~~~
-
-terraform plan \
-
-- var="location=eastus" \
-- var="project\_prefix=icesijobs" \
-- var="env=dev"
-
-~~~
-
-Aplicar:
-
-~~~
-
-terraform apply \
-
-- var="location=eastus" \
-- var="project\_prefix=icesijobs" \
-- var="env=dev"
-
-~~~
-
-Obtener credenciales del cluster AKS:
-
-~~~
-
-terraform output aks\_kube\_config
-
-~~~
+5.  **Obtener credenciales del clúster AKS**:
+    Usa el output de Terraform para configurar `kubectl`.
+    ```bash
+    terraform output -raw aks_kube_config > ~/.kube/config_dev
+    export KUBECONFIG=~/.kube/config_dev
+    kubectl get nodes
+    ```
+    *Nota: El comando exacto puede variar según la configuración de `outputs.tf`.*
 
 ## Seguridad
 
-Recomendaciones importantes:
-
-- No guardar contraseñas o secretos en archivos .tf ni en Git.
-
-- Usar Azure Key Vault o secretos de GitHub Actions.
-
-- Restringir acceso a AKS y SSH (cuando se añadan NSGs).
-
-- Dividir redes por subredes específicas en entornos productivos.
+- **No guardar secretos**: Evita commitear información sensible. Utiliza variables de entorno o Azure Key Vault.
+- **Estado remoto**: Para equipos, es crucial migrar el backend a uno remoto como Azure Storage para evitar conflictos y mantener un estado único.
+- **Mínimo privilegio**: Asegúrate de que las credenciales usadas por Terraform tengan solo los permisos necesarios.
 
 ## Limpieza
 
-Para destruir la infraestructura:
+Para destruir toda la infraestructura de un entorno, ejecuta el comando desde el directorio correspondiente:
 
-~~~
+```bash
+cd infra/envs/dev
+terraform destroy --auto-approve
+```
 
-terraform destroy \
+## Próximos pasos
 
-- var="location=eastus" \
-- var="project\_prefix=icesijobs" \
-- var="env=dev"
-
-~~~
-
-Próximos pasos (recomendado para mejorar la IaC)
-
-Para evolucionar la infraestructura y continuar con las historias de usuario:
-
-- Migrar backend local → Backend remoto con Azure Storage.
-
-- Crear carpetas por entorno (environments/dev, stage, prod).
-
-- Extraer la infraestructura a módulos reutilizables:
-
-~~~
-resource\_group
-
-network
-
-aks
-
-~~~
-
-- Añadir módulos como:
-
-~~~
-
-vm (para runners, SonarQube, etc.)
-
-security (NSG, firewall)
-
-observability (Log Analytics)
-
-~~~
-
-Integrar Terraform en un pipeline (GitHub Actions):
-
-fmt, validate, plan, apply.
+- **Migrar backend local a remoto**: Implementar un backend en Azure Storage para habilitar la colaboración y la ejecución en pipelines de CI/CD.
+- **Añadir más entornos**: Crear carpetas `stage` y `prod` en el directorio `envs`.
+- **Expandir módulos**:
+    - **`database`**: Para gestionar bases de datos como Azure SQL o PostgreSQL.
+    - **`security`**: Para Network Security Groups (NSGs), Firewalls, y políticas de seguridad.
+- **Integración con CI/CD**: Automatizar los flujos de `plan` y `apply` usando GitHub Actions, validando el código en cada Pull Request.
