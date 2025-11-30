@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: payment-service
-          image: nightparker725/payment-service:v1
+          image: nightparker725/payment-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8400
           env:

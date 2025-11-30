@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: proxy-client
-          image: nightparker725/proxy-client:v1
+          image: nightparker725/proxy-client:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8800
           env:

@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: product-service
-          image: nightparker725/product-service:v1
+          image: nightparker725/product-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8500
           env:

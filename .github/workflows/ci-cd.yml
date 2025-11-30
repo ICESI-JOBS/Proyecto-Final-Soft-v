@@ -1,0 +1,113 @@
+name: CI-CD
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+
+env:
+  REGISTRY: docker.io
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build and test with Maven
+        run: ./mvnw -B test
+
+  docker-build-and-push:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push images
+        run: |
+          # API Gateway
+          docker build -t $DOCKERHUB_USERNAME/api-gateway:latest ./api-gateway
+          docker push $DOCKERHUB_USERNAME/api-gateway:latest
+
+          # Cloud Config
+          docker build -t $DOCKERHUB_USERNAME/cloud-config:latest ./cloud-config
+          docker push $DOCKERHUB_USERNAME/cloud-config:latest
+
+          # Service Discovery
+          docker build -t $DOCKERHUB_USERNAME/service-discovery:latest ./service-discovery
+          docker push $DOCKERHUB_USERNAME/service-discovery:latest
+
+          # Microservicios
+          docker build -t $DOCKERHUB_USERNAME/user-service:latest ./user-service
+          docker push $DOCKERHUB_USERNAME/user-service:latest
+
+          docker build -t $DOCKERHUB_USERNAME/product-service:latest ./product-service
+          docker push $DOCKERHUB_USERNAME/product-service:latest
+
+          docker build -t $DOCKERHUB_USERNAME/order-service:latest ./order-service
+          docker push $DOCKERHUB_USERNAME/order-service:latest
+
+          docker build -t $DOCKERHUB_USERNAME/payment-service:latest ./payment-service
+          docker push $DOCKERHUB_USERNAME/payment-service:latest
+
+          docker build -t $DOCKERHUB_USERNAME/shipping-service:latest ./shipping-service
+          docker push $DOCKERHUB_USERNAME/shipping-service:latest
+
+          docker build -t $DOCKERHUB_USERNAME/favourite-service:latest ./favourite-service
+          docker push $DOCKERHUB_USERNAME/favourite-service:latest
+
+          docker build -t $DOCKERHUB_USERNAME/proxy-client:latest ./proxy-client
+          docker push $DOCKERHUB_USERNAME/proxy-client:latest
+
+  deploy-to-aks:
+    needs: docker-build-and-push
+    runs-on: ubuntu-latest
+    # Solo desplegar cuando se hace push a develop (puedes cambiar a main)
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+      - name: Deploy manifests to AKS
+        run: |
+          kubectl apply -n icesi-dev -f k8s
+
+      - name: Restart deployments to pull latest images
+        run: |
+          kubectl rollout restart deployment api-gateway -n icesi-dev
+          kubectl rollout restart deployment cloud-config -n icesi-dev
+          kubectl rollout restart deployment service-discovery -n icesi-dev
+          kubectl rollout restart deployment user-service -n icesi-dev
+          kubectl rollout restart deployment product-service -n icesi-dev
+          kubectl rollout restart deployment order-service -n icesi-dev
+          kubectl rollout restart deployment payment-service -n icesi-dev
+          kubectl rollout restart deployment shipping-service -n icesi-dev
+          kubectl rollout restart deployment favourite-service -n icesi-dev
+          kubectl rollout restart deployment proxy-client -n icesi-dev

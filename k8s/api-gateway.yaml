@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: nightparker725/api-gateway:v1
+          image: nightparker725/api-gateway:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:

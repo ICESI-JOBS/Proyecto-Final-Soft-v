@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: favourite-service
-          image: nightparker725/favourite-service:v1
+          image: nightparker725/favourite-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8800
           env:

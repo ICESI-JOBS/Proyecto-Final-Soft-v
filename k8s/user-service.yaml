@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: user-service
-          image: nightparker725/user-service:v1
+          image: nightparker725/user-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8700
           env:

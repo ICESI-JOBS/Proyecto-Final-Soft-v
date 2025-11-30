@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: cloud-config
-          image: nightparker725/cloud-config:v1
+          image: nightparker725/cloud-config:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 9296
           env:

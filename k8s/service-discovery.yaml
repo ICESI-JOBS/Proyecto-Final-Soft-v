@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: service-discovery
-          image: nightparker725/service-discovery:v1
+          image: nightparker725/service-discovery:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8761
           env:

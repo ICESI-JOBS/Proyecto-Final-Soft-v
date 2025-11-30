@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: order-service
-          image: nightparker725/order-service:v1
+          image: nightparker725/order-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8300
           env:

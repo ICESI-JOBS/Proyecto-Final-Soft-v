@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: shipping-service
-          image: nightparker725/shipping-service:v1
+          image: nightparker725/shipping-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8600
           env:
