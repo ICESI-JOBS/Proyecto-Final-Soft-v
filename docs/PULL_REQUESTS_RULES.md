@@ -28,7 +28,7 @@ Si alguna validación falla, **el PR no puede ser aprobado**.
 ---
 
 ## Requisitos para aprobar un PR
-- Mínimo **una aprobación obligatoria** de un miembro del equipo.
+- Mínimo **una aprobación obligatoria** de un miembro del equipo para los ambientes prod y stage.
 - Revisión de código mediante checklist:
   - ¿Se siguen las convenciones de commits?
   - ¿Se mantiene el estándar de estructura del proyecto?
