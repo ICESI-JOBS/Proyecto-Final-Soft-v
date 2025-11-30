@@ -1,24 +1,24 @@
-variable "env" {
-  description = "Environment name (dev, stage, prod)"
+variable "prefix" {
   type        = string
+  description = "Prefijo para el nombre del recurso"
+}
+
+variable "env" {
+  type        = string
+  description = "Entorno: dev, stage o prod"
 }
 
 variable "location" {
-  description = "Azure location"
   type        = string
-}
-
-variable "prefix" {
-  description = "Prefix for resource names"
-  type        = string
+  description = "Región de Azure donde desplegar recursos"
 }
 
 variable "vnet_address_space" {
-  description = "VNet CIDR"
   type        = list(string)
+  description = "Rango de direcciones de la VNet"
 }
 
 variable "subnet_aks_prefix" {
-  description = "AKS subnet CIDR"
   type        = string
+  description = "Rango de la subred para AKS"
 }
