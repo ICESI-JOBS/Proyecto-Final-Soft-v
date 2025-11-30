@@ -29,7 +29,6 @@ jobs:
   docker-build-and-push:
     needs: build-and-test
     runs-on: ubuntu-latest
-    environment: dev 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,6 +42,16 @@ jobs:
       - name: Build all services (jar)
         run: ./mvnw -B clean package -DskipTests
 
+      - name: Run Trivy file-system scan (security)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1'                 # 🔥 Si encuentra CRITICAL/HIGH, falla el job
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -88,6 +97,7 @@ jobs:
   deploy-to-aks:
     needs: docker-build-and-push
     runs-on: ubuntu-latest
+    environment: dev
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     steps:
       - name: Checkout
