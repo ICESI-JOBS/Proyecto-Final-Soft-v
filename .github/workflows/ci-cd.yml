@@ -2,9 +2,9 @@ name: CI-CD
 
 on:
   push:
-    branches: [ develop, main ]
+    branches: [ dev, master ]
   pull_request:
-    branches: [ develop, main ]
+    branches: [ dev, master ]
 
 env:
   REGISTRY: docker.io
@@ -79,7 +79,7 @@ jobs:
     needs: docker-build-and-push
     runs-on: ubuntu-latest
     # Solo desplegar cuando se hace push a develop (puedes cambiar a main)
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/dev'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
