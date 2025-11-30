@@ -7,7 +7,7 @@ variable "prefix" {
 variable "env" {
   type        = string
   description = "Nombre del entorno (dev, stage o prod)"
-  default     = "dev"
+  default     = "prod"
 }
 
 variable "location" {
@@ -19,11 +19,11 @@ variable "location" {
 variable "node_count" {
   type        = number
   description = "Número de nodos del cluster AKS"
-  default     = 1
+  default     = 2
 }
 
 variable "vm_size" {
   type        = string
   description = "Tamaño de las VMs del node pool de AKS"
-  default     = "Standard_B2s"
+  default     = "Standard_B4ms"
 }

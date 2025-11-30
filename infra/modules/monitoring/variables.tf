@@ -1,19 +1,19 @@
 variable "prefix" {
   type        = string
-  description = "Prefix for resources"
+  description = "Prefijo para el nombre del recurso"
 }
 
 variable "env" {
   type        = string
-  description = "Environment name"
+  description = "Entorno: dev, stage o prod"
 }
 
 variable "location" {
   type        = string
-  description = "Azure location"
+  description = "Región de Azure donde desplegar recursos"
 }
 
 variable "resource_group_name" {
   type        = string
-  description = "Resource group name"
+  description = "Nombre del resource group donde se crea Log Analytics"
 }

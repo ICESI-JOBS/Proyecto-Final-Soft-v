@@ -7,7 +7,7 @@ variable "prefix" {
 variable "env" {
   type        = string
   description = "Nombre del entorno (dev, stage o prod)"
-  default     = "dev"
+  default     = "stage"
 }
 
 variable "location" {
