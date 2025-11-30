@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-config
+  namespace: icesi-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloud-config
+  template:
+    metadata:
+      labels:
+        app: cloud-config
+    spec:
+      containers:
+        - name: cloud-config
+          image: nightparker725/cloud-config:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9296
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "dev"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-config
+  namespace: icesi-dev
+spec:
+  selector:
+    app: cloud-config
+  ports:
+    - port: 9296
+      targetPort: 9296
+  type: ClusterIP

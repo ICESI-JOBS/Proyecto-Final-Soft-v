@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: icesi-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: nightparker725/user-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8700
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "dev"
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:configserver:http://cloud-config.icesi-dev.svc.cluster.local:9296"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "http://service-discovery.icesi-dev.svc.cluster.local:8761/eureka"
+            - name: SPRING_ZIPKIN_BASE_URL
+              value: "http://zipkin.icesi-dev.svc.cluster.local:9411"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: icesi-dev
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 8700
+      targetPort: 8700
+  type: ClusterIP
