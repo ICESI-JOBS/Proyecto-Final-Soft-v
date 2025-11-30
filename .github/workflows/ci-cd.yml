@@ -87,8 +87,7 @@ jobs:
   deploy-to-aks:
     needs: docker-build-and-push
     runs-on: ubuntu-latest
-    # Solo desplegar cuando se hace push a develop (puedes cambiar a main)
-    if: github.ref == 'refs/heads/dev'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -103,6 +102,10 @@ jobs:
         with:
           resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+      - name: Ensure namespace exists
+        run: |
+          kubectl get namespace icesi-dev || kubectl create namespace icesi-dev
 
       - name: Deploy manifests to AKS
         run: |
