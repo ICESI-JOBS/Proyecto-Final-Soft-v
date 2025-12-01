@@ -1,0 +1,28 @@
+name: PR Branch Guard
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate source branch
+        run: |
+          echo "Base branch: ${{ github.base_ref }}"
+          echo "Head branch: ${{ github.head_ref }}"
+
+          ALLOWED=("dev" "stage" "prod")
+
+          for BR in "${ALLOWED[@]}"; do
+            if [ "${{ github.head_ref }}" = "$BR" ]; then
+              echo "Branch '${{ github.head_ref }}' está permitida para PR a master ✅"
+              exit 0
+            fi
+          done
+
+          echo "❌ La rama '${{ github.head_ref }}' NO está permitida para hacer PR a master."
+          echo "Solo se aceptan PR desde: dev, stage o prod."
+          exit 1
