@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-discovery
+  namespace: icesi-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-discovery
+  template:
+    metadata:
+      labels:
+        app: service-discovery
+    spec:
+      containers:
+        - name: service-discovery
+          image: nightparker725/service-discovery:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8761
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "dev"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-discovery
+  namespace: icesi-prod
+spec:
+  selector:
+    app: service-discovery
+  ports:
+    - port: 8761
+      targetPort: 8761
+  type: ClusterIP

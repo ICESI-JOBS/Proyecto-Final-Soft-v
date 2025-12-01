@@ -31,3 +31,18 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Terraform (global)
+.terraform/
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+
+
+
+# Terraform
+infra/.terraform/
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/*.tfplan

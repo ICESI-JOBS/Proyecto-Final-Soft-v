@@ -1,0 +1,188 @@
+name: CI-CD
+
+on:
+  push:
+    branches: [ dev, master ]
+  pull_request:
+    branches: [ dev, master ]
+
+env:
+  REGISTRY: docker.io
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build and test with Maven
+        run: ./mvnw -B test
+
+      - name: Notify Slack on failure (build-and-test)
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":x: *Build and tests fallaron* en `${{ github.repository }}`.\nWorkflow: `${{ github.workflow }}`\nJob: `${{ github.job }}`\nBranch: `${{ github.ref_name }}`\nAutor: `${{ github.actor }}`"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  docker-build-and-push:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Bump version and push tag (only on master)
+        id: tag_version
+        if: github.ref == 'refs/heads/master'
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          tag_prefix: "v"
+
+      - name: Build all services (jar)
+        run: ./mvnw -B clean package -DskipTests
+
+      - name: Run Trivy file-system scan (security)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '0' # continua incluso con vulnerabilidades para seguir con nuestro proyecto, de todos modos puedes revisar los logs del pipeline para verlas bien :)
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Set image version
+        run: |
+          if [ "${GITHUB_REF##*/}" = "master" ]; then
+            echo "VERSION=${{ steps.tag_version.outputs.new_tag }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=dev" >> $GITHUB_ENV
+          fi
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push images
+        run: |
+          echo "Usando version: $VERSION"
+
+          # Función auxiliar bash para taggear latest solo en master
+          tag_and_push() {
+            local image_name=$1
+
+            # Construir la imagen con el tag de versión (dev o vX.Y.Z)
+            docker build -t $DOCKERHUB_USERNAME/$image_name:$VERSION ./$image_name
+            docker push $DOCKERHUB_USERNAME/$image_name:$VERSION
+
+            # Si es master, también publicar como :latest
+            if [ "${GITHUB_REF##*/}" = "master" ]; then
+              docker tag $DOCKERHUB_USERNAME/$image_name:$VERSION $DOCKERHUB_USERNAME/$image_name:latest
+              docker push $DOCKERHUB_USERNAME/$image_name:latest
+            fi
+          }
+
+          # API Gateway
+          tag_and_push api-gateway
+
+          # Cloud Config
+          tag_and_push cloud-config
+
+          # Service Discovery
+          tag_and_push service-discovery
+
+          # Microservicios
+          tag_and_push user-service
+          tag_and_push product-service
+          tag_and_push order-service
+          tag_and_push payment-service
+          tag_and_push shipping-service
+          tag_and_push favourite-service
+          tag_and_push proxy-client
+
+      - name: Notify Slack on failure (docker-build-and-push)
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":x: *Docker build & push falló* en `${{ github.repository }}`.\nWorkflow: `${{ github.workflow }}`\nJob: `${{ github.job }}`\nBranch: `${{ github.ref_name }}`\nAutor: `${{ github.actor }}`"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+
+  deploy-to-aks:
+    needs: docker-build-and-push
+    runs-on: ubuntu-latest
+    environment: dev
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+      - name: Ensure namespace exists
+        run: |
+          kubectl get namespace icesi-dev || kubectl create namespace icesi-dev
+
+      - name: Deploy manifests to AKS
+        run: |
+          kubectl apply -n icesi-dev -f k8s
+
+      - name: Restart deployments to pull latest images
+        run: |
+          kubectl rollout restart deployment api-gateway -n icesi-dev
+          kubectl rollout restart deployment cloud-config -n icesi-dev
+          kubectl rollout restart deployment service-discovery -n icesi-dev
+          kubectl rollout restart deployment user-service -n icesi-dev
+          kubectl rollout restart deployment product-service -n icesi-dev
+          kubectl rollout restart deployment order-service -n icesi-dev
+          kubectl rollout restart deployment payment-service -n icesi-dev
+          kubectl rollout restart deployment shipping-service -n icesi-dev
+          kubectl rollout restart deployment favourite-service -n icesi-dev
+          kubectl rollout restart deployment proxy-client -n icesi-dev
+
+      - name: Notify Slack on failure (deploy-to-aks dev)
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":x: *Deploy a AKS (dev) falló* en `${{ github.repository }}`.\nWorkflow: `${{ github.workflow }}`\nJob: `${{ github.job }}`\nBranch: `${{ github.ref_name }}`\nAutor: `${{ github.actor }}`"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
