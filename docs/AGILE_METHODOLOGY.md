@@ -59,3 +59,5 @@ Se registran:
 
 ## Herramientas Usadas
 - **Jira:** Gestión de backlog, sprints y burndown charts.
+
+- https://lmsgvno921.atlassian.net/jira/software/projects/PFI/boards/3/backlog?atlOrigin=eyJwIjoiaiIsImkiOiI2OTgzNmIyYWM4N2Q0YTA1OWRmZGUzNzU2YzA4NzJjOCJ9&cloudId=b349e2ac-d8a4-4e42-966a-c900d0102041
