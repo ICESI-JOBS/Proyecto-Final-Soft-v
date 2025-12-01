@@ -50,6 +50,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Bump version and push tag (only on master)
+        id: tag_version
+        if: github.ref == 'refs/heads/master'
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          tag_prefix: "v"
+
       - name: Build all services (jar)
         run: ./mvnw -B clean package -DskipTests
 
@@ -62,7 +71,15 @@ jobs:
           exit-code: '0' # continua incluso con vulnerabilidades para seguir con nuestro proyecto, de todos modos puedes revisar los logs del pipeline para verlas bien :)
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-          
+
+      - name: Set image version
+        run: |
+          if [ "${GITHUB_REF##*/}" = "master" ]; then
+            echo "VERSION=${{ steps.tag_version.outputs.new_tag }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=dev" >> $GITHUB_ENV
+          fi
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -71,40 +88,41 @@ jobs:
 
       - name: Build and push images
         run: |
+          echo "Usando version: $VERSION"
+
+          # Función auxiliar bash para taggear latest solo en master
+          tag_and_push() {
+            local image_name=$1
+
+            # Construir la imagen con el tag de versión (dev o vX.Y.Z)
+            docker build -t $DOCKERHUB_USERNAME/$image_name:$VERSION ./$image_name
+            docker push $DOCKERHUB_USERNAME/$image_name:$VERSION
+
+            # Si es master, también publicar como :latest
+            if [ "${GITHUB_REF##*/}" = "master" ]; then
+              docker tag $DOCKERHUB_USERNAME/$image_name:$VERSION $DOCKERHUB_USERNAME/$image_name:latest
+              docker push $DOCKERHUB_USERNAME/$image_name:latest
+            fi
+          }
+
           # API Gateway
-          docker build -t $DOCKERHUB_USERNAME/api-gateway:latest ./api-gateway
-          docker push $DOCKERHUB_USERNAME/api-gateway:latest
+          tag_and_push api-gateway
 
           # Cloud Config
-          docker build -t $DOCKERHUB_USERNAME/cloud-config:latest ./cloud-config
-          docker push $DOCKERHUB_USERNAME/cloud-config:latest
+          tag_and_push cloud-config
 
           # Service Discovery
-          docker build -t $DOCKERHUB_USERNAME/service-discovery:latest ./service-discovery
-          docker push $DOCKERHUB_USERNAME/service-discovery:latest
+          tag_and_push service-discovery
 
           # Microservicios
-          docker build -t $DOCKERHUB_USERNAME/user-service:latest ./user-service
-          docker push $DOCKERHUB_USERNAME/user-service:latest
+          tag_and_push user-service
+          tag_and_push product-service
+          tag_and_push order-service
+          tag_and_push payment-service
+          tag_and_push shipping-service
+          tag_and_push favourite-service
+          tag_and_push proxy-client
 
-          docker build -t $DOCKERHUB_USERNAME/product-service:latest ./product-service
-          docker push $DOCKERHUB_USERNAME/product-service:latest
-
-          docker build -t $DOCKERHUB_USERNAME/order-service:latest ./order-service
-          docker push $DOCKERHUB_USERNAME/order-service:latest
-
-          docker build -t $DOCKERHUB_USERNAME/payment-service:latest ./payment-service
-          docker push $DOCKERHUB_USERNAME/payment-service:latest
-
-          docker build -t $DOCKERHUB_USERNAME/shipping-service:latest ./shipping-service
-          docker push $DOCKERHUB_USERNAME/shipping-service:latest
-
-          docker build -t $DOCKERHUB_USERNAME/favourite-service:latest ./favourite-service
-          docker push $DOCKERHUB_USERNAME/favourite-service:latest
-
-          docker build -t $DOCKERHUB_USERNAME/proxy-client:latest ./proxy-client
-          docker push $DOCKERHUB_USERNAME/proxy-client:latest
-        
       - name: Notify Slack on failure (docker-build-and-push)
         if: failure()
         uses: slackapi/slack-github-action@v1.27.0
@@ -157,7 +175,7 @@ jobs:
           kubectl rollout restart deployment shipping-service -n icesi-dev
           kubectl rollout restart deployment favourite-service -n icesi-dev
           kubectl rollout restart deployment proxy-client -n icesi-dev
-          
+
       - name: Notify Slack on failure (deploy-to-aks dev)
         if: failure()
         uses: slackapi/slack-github-action@v1.27.0
