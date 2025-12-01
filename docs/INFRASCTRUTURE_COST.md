@@ -48,12 +48,27 @@ Estos valores pueden encontrarse en [infra/envs/prod/variables.tf](../infra/envs
 - Monitorea el uso de logs y ajusta la retención de datos.
 - Consulta las calculadoras de Azure para estimar precios actuales según configuración ([Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/)).
 
-## 5. Visualización de Costos
+## 5. Análisis de Costos con FinOps
+
+Según el último reporte de FinOps (`finops-analysis-20251201-084840.json`), se ha realizado un análisis de costos para el entorno de desarrollo (`icesijobs-dev-rg`) con los siguientes resultados:
+
+| Métrica                | Valor (unidades) |
+|------------------------|------------------|
+| **Costo Total Actual** | 100              |
+| Desglose - AKS         | 100              |
+| **Ahorro Potencial**   | 54               |
+| **Costo Optimizado**   | 46               |
+
+Estos datos, generados el 2025-12-01, indican que la mayor parte del costo se concentra en Azure Kubernetes Service (AKS). Se ha identificado un potencial de ahorro significativo, lo que sugiere que se pueden aplicar optimizaciones para reducir los costos operativos en el entorno de desarrollo.
+
+
+## 6. Visualización de Costos
 
 A continuación se incluyen imágenes tomadas desde el portal de Azure (ubicadas en `/docs/`):
 
-- ![Ejemplo de Resumen de Costos - Azure](/docs/Costos%20Azure.jpeg)
-- ![Detalle de Costos de Infraestructura](/docs/Costos%20Azure%202.jpeg)
+- ![Ejemplo de Resumen de Costos - Azure](Costos%20Azure.jpeg)
+
+- ![Detalle de Costos de Infraestructura](Costos%20Azure%202.jpeg)
 
 ## 6. Referencias y Enlaces Útiles
 
@@ -63,4 +78,4 @@ A continuación se incluyen imágenes tomadas desde el portal de Azure (ubicadas
 
 ---
 
-> **Nota**: Los valores y costos exactos pueden variar mes a mes y dependen también del uso concreto y tamaño de cada recurso. Es recomendable validar los costos reales desde el Portal de Azure o con el administrador del tenant.
+> **Nota**: Los valores y costos exactos pueden variar mes a mes y dependen también del uso concreto y tamaño de cada recurso. Es recomendable validar los costos reales desde el Portal de Azure.
