@@ -1,7 +1,7 @@
 name: Deploy to AKS - Prod
 
 on:
-  workflow_dispatch:   # Solo manual, y con approvals del environment "prod"
+  workflow_dispatch:
 
 env:
   REGISTRY: docker.io
@@ -10,7 +10,7 @@ env:
 jobs:
   deploy-to-aks-prod:
     runs-on: ubuntu-latest
-    environment: prod    # Aquí GitHub aplica los "required reviewers"
+    environment: prod
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
           kubectl rollout restart deployment shipping-service -n icesi-prod
           kubectl rollout restart deployment favourite-service -n icesi-prod
           kubectl rollout restart deployment proxy-client -n icesi-prod
-          
+
       - name: Notify Slack on failure (deploy prod)
         if: failure()
         uses: slackapi/slack-github-action@v1.27.0

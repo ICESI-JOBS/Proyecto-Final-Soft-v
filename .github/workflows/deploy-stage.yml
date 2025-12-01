@@ -1,7 +1,7 @@
 name: Deploy to AKS - Stage
 
 on:
-  workflow_dispatch:   # Lo lanzas a mano cuando quieras promover a stage
+  workflow_dispatch:
 
 env:
   REGISTRY: docker.io
@@ -10,7 +10,7 @@ env:
 jobs:
   deploy-to-aks-stage:
     runs-on: ubuntu-latest
-    environment: stage   # Enlace con el environment "stage"
+    environment: stage
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
           kubectl rollout restart deployment shipping-service -n icesi-stage
           kubectl rollout restart deployment favourite-service -n icesi-stage
           kubectl rollout restart deployment proxy-client -n icesi-stage
-          
+
       - name: Notify Slack on failure (deploy stage)
         if: failure()
         uses: slackapi/slack-github-action@v1.27.0

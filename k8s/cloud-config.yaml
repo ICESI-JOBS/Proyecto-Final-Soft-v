@@ -19,6 +19,19 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 9296
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 9296
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 9296
+            initialDelaySeconds: 15
+            periodSeconds: 10
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "dev"

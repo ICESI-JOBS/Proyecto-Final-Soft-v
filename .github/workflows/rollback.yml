@@ -1,0 +1,65 @@
+name: Manual Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Ambiente a hacer rollback (dev/stage/prod)"
+        required: true
+        default: "prod"
+      version:
+        description: "Versión/tag a desplegar (ej: v1.0.1 o dev)"
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+      - name: Seleccionar namespace según ambiente
+        id: ns
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "dev" ]; then
+            echo "NAMESPACE=icesi-dev" >> $GITHUB_ENV
+          elif [ "${{ github.event.inputs.environment }}" = "stage" ]; then
+            echo "NAMESPACE=icesi-stage" >> $GITHUB_ENV
+          else
+            echo "NAMESPACE=icesi-prod" >> $GITHUB_ENV
+          fi
+
+      - name: Hacer rollback seteando imágenes a la versión indicada
+        run: |
+          VERSION=${{ github.event.inputs.version }}
+
+          kubectl set image deployment/api-gateway api-gateway=$DOCKERHUB_USERNAME/api-gateway:$VERSION -n $NAMESPACE
+          kubectl set image deployment/cloud-config cloud-config=$DOCKERHUB_USERNAME/cloud-config:$VERSION -n $NAMESPACE
+          kubectl set image deployment/service-discovery service-discovery=$DOCKERHUB_USERNAME/service-discovery:$VERSION -n $NAMESPACE
+          kubectl set image deployment/user-service user-service=$DOCKERHUB_USERNAME/user-service:$VERSION -n $NAMESPACE
+          kubectl set image deployment/product-service product-service=$DOCKERHUB_USERNAME/product-service:$VERSION -n $NAMESPACE
+          kubectl set image deployment/order-service order-service=$DOCKERHUB_USERNAME/order-service:$VERSION -n $NAMESPACE
+          kubectl set image deployment/payment-service payment-service=$DOCKERHUB_USERNAME/payment-service:$VERSION -n $NAMESPACE
+          kubectl set image deployment/shipping-service shipping-service=$DOCKERHUB_USERNAME/shipping-service:$VERSION -n $NAMESPACE
+          kubectl set image deployment/favourite-service favourite-service=$DOCKERHUB_USERNAME/favourite-service:$VERSION -n $NAMESPACE
+          kubectl set image deployment/proxy-client proxy-client=$DOCKERHUB_USERNAME/proxy-client:$VERSION -n $NAMESPACE
+
+          kubectl rollout status deployment/api-gateway -n $NAMESPACE
