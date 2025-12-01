@@ -18,11 +18,11 @@ jobs:
 
           for BR in "${ALLOWED[@]}"; do
             if [ "${{ github.head_ref }}" = "$BR" ]; then
-              echo "Branch '${{ github.head_ref }}' está permitida para PR a master ✅"
+              echo "Branch '${{ github.head_ref }}' está permitida para pr a master "
               exit 0
             fi
           done
 
-          echo "❌ La rama '${{ github.head_ref }}' NO está permitida para hacer PR a master."
+          echo "La rama '${{ github.head_ref }}' no está permitida para hacer pr a master."
           echo "Solo se aceptan PR desde: dev, stage o prod."
           exit 1

@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ dev, master ]
 
+permissions:
+  contents: write
+  
 env:
   REGISTRY: docker.io
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
