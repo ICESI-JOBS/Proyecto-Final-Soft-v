@@ -1,0 +1,12 @@
+﻿{
+    "resourceGroup":  "icesijobs-dev-rg",
+    "timestamp":  "2025-12-01 08:30:59",
+    "potentialSavings":  54,
+    "costs":  {
+                  "aks":  100,
+                  "containers":  0,
+                  "storage":  0,
+                  "total":  100
+              },
+    "optimizedCost":  46
+}
