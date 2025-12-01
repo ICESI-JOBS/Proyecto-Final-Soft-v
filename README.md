@@ -1,4 +1,4 @@
-# e-Commerce-boot μServices sssss
+# e-Commerce-boot μServices 
 
 ## Important Note: This project's new milestone is to move The whole system to work on Kubernetes, so stay tuned.
 
