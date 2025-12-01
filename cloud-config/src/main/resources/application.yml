@@ -32,18 +32,14 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
-  health:
-    circuitbreakers:
-      enabled: true
+        include: "health,info,prometheus"
   endpoint:
     health:
-      show-details: always
-
-
-
-
-
-
+      probes:
+        enabled: true         # habilita /health/liveness y /health/readiness
+      show-details: "always"
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 

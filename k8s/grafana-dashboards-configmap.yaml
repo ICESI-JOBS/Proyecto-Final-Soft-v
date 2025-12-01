@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: icesi-dev
+data:
+  api-gateway-dashboard.json: |
+    {{INSERT_API_GATEWAY_DASHBOARD_HERE}}
+  user-service-dashboard.json: |
+    {{INSERT_USER_SERVICE_DASHBOARD_HERE}}
+  product-service-dashboard.json: |
+    {{INSERT_PRODUCT_SERVICE_DASHBOARD_HERE}}
+  order-service-dashboard.json: |
+    {{INSERT_ORDER_SERVICE_DASHBOARD_HERE}}
+  payment-service-dashboard.json: |
+    {{INSERT_PAYMENT_SERVICE_DASHBOARD_HERE}}
+  shipping-service-dashboard.json: |
+    {{INSERT_SHIPPING_SERVICE_DASHBOARD_HERE}}
+  favourite-service-dashboard.json: |
+    {{INSERT_FAVOURITE_SERVICE_DASHBOARD_HERE}}
+  system-overview-dashboard.json: |
+    {{INSERT_SYSTEM_OVERVIEW_DASHBOARD_HERE}}
