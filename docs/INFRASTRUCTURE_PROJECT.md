@@ -37,9 +37,18 @@ infra/
 └── README.md                    # Esta documentación
 ```
 
-## Diagrama de Arquitectura para Terraform
+## Diagramas de Arquitectura
 
-![alt text](<Arquitecture_Diagram_Terraform.png>)
+A continuación se presentan los diagramas de arquitectura relevantes para el proyecto.
+
+### Diagrama de Arquitectura de Terraform
+![Arquitectura de Terraform](Arquitecture_Diagram_Terraform.png)
+
+### Arquitectura de Kubernetes
+![Arquitectura de Kubernetes](K8S_Arquitecture.png)
+
+### Diagrama de Red de Infraestructura
+![Diagrama de Red de Infraestructura](Network_Diagram.png)
 
 ## Requisitos Previos
 
