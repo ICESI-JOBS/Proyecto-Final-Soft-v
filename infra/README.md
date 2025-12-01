@@ -1,134 +1,84 @@
-## Infraestructura con Terraform (Azure)
+# Infraestructura como Código con Terraform
 
-Este directorio contiene la infraestructura como código para el proyecto del ecommerce basado en microservicios, desplegado sobre Microsoft Azure usando Terraform.
+Este directorio contiene el código de Terraform para aprovisionar y gestionar toda la infraestructura del proyecto en Microsoft Azure.
 
-El objetivo de esta configuración es:
+## Resumen de la Arquitectura
 
-- Proveer una base estructurada y modular de Terraform.
-- Crear recursos centrales de infraestructura en Azure (Resource Group, Virtual Network, un clúster AKS y Monitoreo).
-- Permitir diferenciar entornos (dev, stage, prod) usando workspaces y carpetas dedicadas.
-- Facilitar la gestión y el despliegue a través de un flujo de trabajo claro.
+La infraestructura está diseñada para ser modular, escalable y gestionable a través de diferentes entornos, siguiendo las mejores prácticas de IaC (Infrastructure as Code).
 
-## Estructura
+### Características Principales
 
-La carpeta `infra/` ha evolucionado a una estructura modular y basada en entornos para mejorar la reutilización y la separación de responsabilidades:
+- **Gestión con Terraform**: Toda la infraestructura (redes, clústeres de Kubernetes, monitoreo, etc.) se define como código utilizando Terraform, lo que garantiza la reproducibilidad y la automatización.
+- **Estructura Modular**: La infraestructura se divide en módulos reutilizables (`network`, `aks`, `monitoring`) ubicados en el directorio `modules/`. Esto permite una gestión más sencilla y un código más limpio.
+- **Soporte para Múltiples Entornos**: La configuración soporta distintos entornos como `dev`, `stage` y `prod`. Cada entorno está aislado en su propio directorio dentro de `envs/`, lo que permite configuraciones personalizadas y estados independientes.
+- **Backend Remoto**: Se utiliza un backend remoto (Azure Storage Account) para almacenar el estado de Terraform (`.tfstate`). Esto es crucial para el trabajo en equipo, ya que evita conflictos de estado y garantiza que todos los miembros del equipo y los pipelines de CI/CD trabajen sobre la misma versión de la infraestructura.
+- **Documentación Visual**: La arquitectura de la infraestructura está documentada a través de diagramas para facilitar la comprensión de su diseño y componentes.
+
+## Estructura de Archivos
 
 ```
 infra/
 ├── envs/
-│   └── dev/
-│       ├── main.tf              # Llama a los módulos con valores para el entorno 'dev'
-│       ├── variables.tf         # Variables específicas de 'dev'
-│       ├── outputs.tf           # Salidas del entorno 'dev'
-│       └── .terraform.lock.hcl
+│   ├── dev/
+│   │   ├── main.tf              # Configuración principal para 'dev'
+│   │   ├── variables.tf         # Variables para 'dev'
+│   │   └── outputs.tf           # Salidas de 'dev'
+│   ├── stage/
+│   └── prod/
 │
 ├── modules/
-│   ├── aks/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   ├── monitoring/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   └── network/
-│       ├── main.tf
-│       ├── variables.tf
-│       └── outputs.tf
+│   ├── aks/                     # Módulo para Azure Kubernetes Service
+│   ├── network/                 # Módulo para la red virtual y subredes
+│   └── monitoring/              # Módulo para recursos de monitoreo
 │
-├── .gitignore
-├── README.md                    # Esta documentación
-└── ... (otros archivos raíz que pueden ser legacy o de configuración global)
+├── main.tf                      # Configuración raíz (puede definir el backend)
+├── variables.tf                 # Variables globales
+├── providers.tf                 # Definición de proveedores (AzureRM)
+└── README.md                    # Esta documentación
 ```
 
-- **`envs/`**: Contiene una subcarpeta por cada entorno (ej. `dev`, `stage`, `prod`). Cada una tiene su propio `main.tf` que consume los módulos del directorio `modules` para construir la infraestructura de ese entorno específico.
-- **`modules/`**: Contiene módulos de Terraform reutilizables. Cada módulo encapsula una pieza lógica de la infraestructura:
-    - **`aks`**: Define el clúster de Azure Kubernetes Service.
-    - **`network`**: Define la Virtual Network, subredes y otros componentes de red.
-    - **`monitoring`**: Define los recursos de monitoreo, como Log Analytics Workspace.
+## Diagrama de Arquitectura para Terraform
 
-## Historias de Usuario Cubiertas
+![alt text](<Arquitecture_Diagram_Terraform.png>)
 
-1.  **Inicializar un proyecto Terraform estructurado**: Se cumple mediante la organización en módulos y entornos, lo que permite una gestión limpia y escalable.
-2.  **Modularización de la infraestructura**: Se ha implementado extrayendo la lógica de `AKS`, `network` y `monitoring` en módulos reutilizables, permitiendo que cada pieza evolucione de forma independiente.
-3.  **Backend para estado de Terraform**: El backend sigue siendo local dentro de cada entorno (`envs/dev/terraform.tfstate`), pero está preparado para migrar a un backend remoto (Azure Storage) para trabajo en equipo.
-4.  **Multi-ambiente**: Implementado a través de directorios dedicados en `envs/`, lo que proporciona un aislamiento mucho más robusto que el uso de variables. Cada entorno tiene su propio estado y configuración.
+## Requisitos Previos
 
-## Recursos que se crean (por entorno)
+- Terraform v1.6.0 o superior
+- Azure CLI
+- Estar autenticado en Azure (`az login`) con permisos para crear los recursos.
 
-La infraestructura definida en el entorno `dev` crea:
+## Cómo Empezar
 
-- Un **Resource Group**.
-- Una **Virtual Network** con sus subredes (gracias al módulo `network`).
-- Un **clúster AKS (Azure Kubernetes Service)** (gracias al módulo `aks`).
-- Un **Log Analytics Workspace** para monitoreo (gracias al módulo `monitoring`).
+El flujo de trabajo se realiza desde el directorio del entorno que se desea gestionar.
 
-## Prerrequisitos
-
-- Terraform ≥ 1.6.0
-- Azure CLI instalado y autenticado:
-  ```bash
-  az login
-  az account show
-  ```
-- Permisos suficientes en la suscripción de Azure para crear los recursos mencionados.
-
-## Flujo de uso recomendado
-
-El flujo de trabajo ahora se realiza **dentro del directorio del entorno** que se desea gestionar.
-
-1.  **Entrar a la carpeta del entorno `dev`**:
-    ```bash
-    cd infra/envs/dev
+1.  **Navegar al directorio del entorno**:
+    ```sh
+    cd envs/dev
     ```
 
 2.  **Inicializar Terraform**:
-    Esto descargará los proveedores y configurará los módulos.
-    ```bash
+    Descarga los proveedores y configura el backend remoto.
+    ```sh
     terraform init
     ```
 
-3.  **Ver el plan de ejecución**:
-    Revisa qué cambios se aplicarán en la infraestructura.
-    ```bash
+3.  **Planificar los cambios**:
+    Muestra los cambios que se aplicarán en la infraestructura sin ejecutarlos.
+    ```sh
     terraform plan
     ```
 
 4.  **Aplicar los cambios**:
-    Crea o actualiza la infraestructura en Azure.
-    ```bash
-    terraform apply --auto-approve
+    Crea o actualiza los recursos en Azure.
+    ```sh
+    terraform apply
     ```
 
-5.  **Obtener credenciales del clúster AKS**:
-    Usa el output de Terraform para configurar `kubectl`.
-    ```bash
-    terraform output -raw aks_kube_config > ~/.kube/config_dev
-    export KUBECONFIG=~/.kube/config_dev
-    kubectl get nodes
-    ```
-    *Nota: El comando exacto puede variar según la configuración de `outputs.tf`.*
+## Destruir la Infraestructura
 
-## Seguridad
+Para eliminar todos los recursos de un entorno y evitar costos, ejecuta el siguiente comando desde el directorio del entorno correspondiente:
 
-- **No guardar secretos**: Evita commitear información sensible. Utiliza variables de entorno o Azure Key Vault.
-- **Estado remoto**: Para equipos, es crucial migrar el backend a uno remoto como Azure Storage para evitar conflictos y mantener un estado único.
-- **Mínimo privilegio**: Asegúrate de que las credenciales usadas por Terraform tengan solo los permisos necesarios.
-
-## Limpieza
-
-Para destruir toda la infraestructura de un entorno, ejecuta el comando desde el directorio correspondiente:
-
-```bash
-cd infra/envs/dev
-terraform destroy --auto-approve
+```sh
+cd envs/dev
+terraform destroy
 ```
-
-## Próximos pasos
-
-- **Migrar backend local a remoto**: Implementar un backend en Azure Storage para habilitar la colaboración y la ejecución en pipelines de CI/CD.
-- **Añadir más entornos**: Crear carpetas `stage` y `prod` en el directorio `envs`.
-- **Expandir módulos**:
-    - **`database`**: Para gestionar bases de datos como Azure SQL o PostgreSQL.
-    - **`security`**: Para Network Security Groups (NSGs), Firewalls, y políticas de seguridad.
-- **Integración con CI/CD**: Automatizar los flujos de `plan` y `apply` usando GitHub Actions, validando el código en cada Pull Request.
