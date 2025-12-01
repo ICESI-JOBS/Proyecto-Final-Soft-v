@@ -18,6 +18,10 @@ I analysed this repository according to the clean code standards on [Better Code
 - Jhon Lamus - A00372128
 - David Henao - A00394033
 
+## JIRA
+
+https://lmsgvno921.atlassian.net/jira/software/projects/PFI/boards/3/backlog?atlOrigin=eyJwIjoiaiIsImkiOiI2OTgzNmIyYWM4N2Q0YTA1OWRmZGUzNzU2YzA4NzJjOCJ9&cloudId=b349e2ac-d8a4-4e42-966a-c900d0102041
+
 ---
 ## Getting started
 ### System components Structure
