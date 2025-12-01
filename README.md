@@ -13,6 +13,12 @@ I analysed this repository according to the clean code standards on [Better Code
  - This project is going to be developed as stages, and all such stage steps are documented under
   the project **e-Commerce-boot μServices** **README** file <!--[wiki page](https://github.com/mohamed-taman/Springy-Store-Microservices/wiki)-->.
 ---
+
+## Members
+- Jhon Lamus - A00372128
+- David Henao - A00394033
+
+---
 ## Getting started
 ### System components Structure
 Let's explain first the system structure to understand its components:
