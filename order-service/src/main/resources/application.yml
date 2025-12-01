@@ -30,9 +30,15 @@ resilience4j:
         sliding-window-type: COUNT_BASED
 
 management:
-  health:
-    circuitbreakers:
-      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus"
   endpoint:
     health:
-      show-details: always
+      probes:
+        enabled: true         # habilita /health/liveness y /health/readiness
+      show-details: "always"
+  metrics:
+    tags:
+      application: ${spring.application.name}
